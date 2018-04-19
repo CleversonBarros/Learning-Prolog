@@ -76,11 +76,13 @@ iniciar:-
 	new(Menu, dialog('Assistente Cervejeiro')),
 	new(L1,label(text,'Olá, sou seu Assistente Cervejeiro. Irei ajudar a descobrir a cerveja ideal para você!')),
 	new(L2,label(text,'Pode responder algumas perguntas?')),
-	new(B1,button('Sim',message(@prolog,operacao))),
+	new(T1,text_item('Nome')),
+	send(Menu,display,T1,point(150,110)),
+	new(B1,button('Sim',message(@prolog,operacao,T1?selection))),
 	new(B2,button('Fechar',and(message(Menu, destroy),message(Menu,free)))),
 
 	send(Menu,display,L1,point(20,40)),
-	send(Menu,display,L2,point(150,100)),
+	send(Menu,display,L2,point(150,75)),
 	send(Menu,display,B1,point(130,150)),
 	send(Menu,display,B2,point(300,150)),
 	send(Menu,open_centered).
