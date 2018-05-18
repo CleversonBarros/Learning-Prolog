@@ -22,14 +22,14 @@ cerveja(c8,'Saison').
 
 /* Para incremento da porcentagem das cervejas */
 
-cervejaPorcentagem(c1, 0).
-cervejaPorcentagem(c2, 0).
-cervejaPorcentagem(c3, 0).
-cervejaPorcentagem(c4, 0).
-cervejaPorcentagem(c5, 0).
-cervejaPorcentagem(c6, 0).
-cervejaPorcentagem(c7, 0).
-cervejaPorcentagem(c8, 0).
+cervejaPorcentagem(c1,0).
+cervejaPorcentagem(c2,0).
+cervejaPorcentagem(c3,0).
+cervejaPorcentagem(c4,0).
+cervejaPorcentagem(c5,0).
+cervejaPorcentagem(c6,0).
+cervejaPorcentagem(c7,0).
+cervejaPorcentagem(c8,0).
 
 /* Perguntas */
 
@@ -39,6 +39,14 @@ pergunta(p3,'Voce quer uma cerveja escura?',[c1,c3,c5,c7],[c2,c4,c6,c8]).
 
 
 /*-------- Sistema Lógico -------- */
+
+/* Reseta a porcentagem, para o programa ser capaz de rodar novamente */
+limpar :-
+	retract(cervejaPorcentagem(_,_)),
+	asserta(cervejaPorcentagem(_,0)),
+	fail.
+limpar.
+
 max([X],M):-
 	cervejaPorcentagem(X,M).
 max([H|T],M) :-
@@ -61,7 +69,8 @@ respostas :-
 	new(L2,label(text,Resposta)),
 	send(D, append(L1)),
 	send(D,append(L2)),
-	send(D,open_centered).
+	send(D,open_centered),
+	limpar.
 
 /* Gera a porcentagem e guarda em cervejaPorcentagem */
 gerarPorcentagem([]).
@@ -102,10 +111,6 @@ incrementar([H|T]):-
 	asserta(cervejaPorcentagem(H,Y1)),
 	incrementar(T).
 
-/* Reseta a porcentagem, para o programa ser capaz de rodar novamente */
-limpar :- retract(cervejaPorcentagem(_,0)), fail.
-limpar.
-
 /* Verifica se a Idade é um numero e se é de uma pessoa maior de idade */
 verificar(Idade,Menu) :-
 	number(Idade),
@@ -124,8 +129,7 @@ operacao(Idade,Menu):-
 	verificar(Idade,Menu),
 	perguntas,
 	gerarPorcentagem([c1,c2,c3,c4,c5,c6,c7,c8]),
-	respostas,
-	limpar.
+	respostas.
 
 /* Consulta que deverá ser realizada para o ínicio do programa */
 /* Responsável pela primeira interface e por chamar a função que realizará a logica do programa */
