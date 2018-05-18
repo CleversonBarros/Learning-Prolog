@@ -108,14 +108,14 @@ limpar.
 
 /* Verifica se a Idade é um numero e se é de uma pessoa maior de idade */
 verificar(Idade,Menu) :-
-	((Idade>17) -> number(Idade);
+	number(Idade),
+	((Idade>17) -> true;
 	new(Alerta,dialog('Assistente Cervejeiro')),
 	new(L1,label(texto,'Você é menor de idade. Em tese, não pode comprar bebida. Vai estudar!')),
 	new(B1,button('Ok',and(message(Menu, destroy),message(Menu,free),message(Alerta, destroy),message(Alerta,free)))),
 	send(Alerta,append(L1)),
 	send(Alerta,append(B1)),
-	send(Alerta,open_centered)),
-	fail.
+	send(Alerta,open_centered), fail).
 
 /* Consulta chamada pela consulta iniciar. */
 /* Responsável chamar as consultas principais */
