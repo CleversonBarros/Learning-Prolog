@@ -41,10 +41,7 @@ pergunta(p3,'Voce quer uma cerveja escura?',[c1,c3,c5,c7],[c2,c4,c6,c8]).
 /*-------- Sistema Lógico -------- */
 
 /* Reseta a porcentagem, para o programa ser capaz de rodar novamente */
-limpar :-
-	retract(cervejaPorcentagem(_,_)),
-	asserta(cervejaPorcentagem(_,0)),
-	fail.
+limpar :- asserta(cervejaPorcentagem(_,0)), fail.
 limpar.
 
 max([X],M):-
@@ -107,7 +104,6 @@ incrementar([]).
 incrementar([H|T]):- 
 	cervejaPorcentagem(H,Quantidade),
 	Y1 is Quantidade+1,
-	retract(cervejaPorcentagem(H,_)),
 	asserta(cervejaPorcentagem(H,Y1)),
 	incrementar(T).
 
@@ -147,4 +143,4 @@ iniciar:-
 	send(Menu,display,L2,point(150,100)),
 	send(Menu,display,B1,point(130,150)),
 	send(Menu,display,B2,point(300,150)),
-	send(Menu,open_centered).
+send(Menu,open_centered).
