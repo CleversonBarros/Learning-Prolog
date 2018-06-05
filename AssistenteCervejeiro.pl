@@ -1,118 +1,208 @@
-/* Importação de modulos */
-
 :- use_module(library(pce)).
 :- use_module(library(pce_style_item)).
 :- encoding(utf8).
-:- dynamic cervejaPorcentagem/2.
-:- dynamic max/1.
+:- dynamic cerveja/6.
+:- dynamic resposta/3.
+:- dynamic max/2.
 
-/*-------- Dados --------*/
+/* Base de Conhecimento */
 
+cerveja(c1,'IPA',grauTeor,grauAmargor,grauCor,0).
+cerveja(c2,'Sour Ale',grauTeor,grauAmargor,grauCor,0).
+cerveja(c3,'Dubbel',grauTeor,grauAmargor,grauCor,0).
+cerveja(c4,'Pilsen',grauTeor,grauAmargor,grauCor,0).
+cerveja(c5,'Golden Ale',grauTeor,grauAmargor,grauCor,0).
+cerveja(c6,'Fruit Bear',grauTeor,grauAmargor,grauCor,0).
+cerveja(c7,'Pale Ale',grauTeor,grauAmargor,grauCor,0).
+cerveja(c8,'Saison',grauTeor,grauAmargor,grauCor,0).
 
-/* Respostas possíveis */
+/* Teor Alcoolico */
+teorAlcoolico(c1,5.5).
+teorAlcoolico(c2,4.0).
+teorAlcoolico(c3,6.0).
+teorAlcoolico(c4,3.5).
+teorAlcoolico(c5,6.0).
+teorAlcoolico(c6,3.6).
+teorAlcoolico(c7,4.2).
+teorAlcoolico(c8,3.8).
 
-cerveja(c1,'IPA').
-cerveja(c2,'Sour Ale').
-cerveja(c3,'Dubbel').
-cerveja(c4,'Pilsen').
-cerveja(c5,'Golden Ale').
-cerveja(c6,'Fruit Bear').
-cerveja(c7,'Pale Ale').
-cerveja(c8,'Saison').
+/* Amargor da Cerveja (IBU) (0-120) */
+amargorCerveja(c1,90).
+amargorCerveja(c2,60).
+amargorCerveja(c3,30).
+amargorCerveja(c4,45).
+amargorCerveja(c5,14).
+amargorCerveja(c6,21).
+amargorCerveja(c7,30).
+amargorCerveja(c8,25).
 
-/* Para incremento da porcentagem das cervejas */
+/* Escala de Cor da Cerveja (0-15) */
 
-cervejaPorcentagem(c1,0).
-cervejaPorcentagem(c2,0).
-cervejaPorcentagem(c3,0).
-cervejaPorcentagem(c4,0).
-cervejaPorcentagem(c5,0).
-cervejaPorcentagem(c6,0).
-cervejaPorcentagem(c7,0).
-cervejaPorcentagem(c8,0).
+corCerveja(c1,5).
+corCerveja(c2,2).
+corCerveja(c3,8).
+corCerveja(c4,3).
+corCerveja(c5,11).
+corCerveja(c6,8).
+corCerveja(c7,7).
+corCerveja(c8,9).
 
 /* Perguntas */
 
-pergunta(p1,'Voce quer uma cerveja muito amarga?',[c1,c2,c3,c4],[c5,c6,c7,c8]).
-pergunta(p2,'Voce quer uma cerveja com um teor alcolico alto?',[c1,c2,c5,c6],[c3,c4,c7,c8]).
-pergunta(p3,'Voce quer uma cerveja escura?',[c1,c3,c5,c7],[c2,c4,c6,c8]).
+pergunta(p1,'Qual o teor alcoolico?').
+pergunta(p2,'Qual o amargor da cerveja?').
+pergunta(p3,'Qual a cor?').
 
+resposta(0,0,0).
 
-/*-------- Sistema Lógico -------- */
+/* Gerar Graus */
 
-/* Reseta a porcentagem, para o programa ser capaz de rodar novamente */
-limpar :- asserta(cervejaPorcentagem(_,0)), fail.
-limpar.
+gerarTeor([]).
+gerarTeor([H|T]) :-
+	cerveja(H,Cerveja,_,GA,GC,P),
+	teorAlcoolico(H,X),
+	Y is 7-X,
+	Y1 is 1/Y,
+	((Y1=<0.3) -> R=baixo;
+		(Y1=<0.6) -> R=moderado;
+		(Y1=<1) -> R=alto),
+	asserta(cerveja(H,Cerveja,R,GA,GC,P)),
+	gerarTeor(T).
 
+gerarAmargor([]).
+gerarAmargor([H|T]) :-
+	cerveja(H,Cerveja,GT,_,GC,P),
+	amargorCerveja(H,X),
+	Y is 121-X,
+	Y1 is 1/Y,
+	((Y1=<0.3) -> R=baixo;
+		(Y1=<0.6) -> R=moderado;
+		(Y1=<1) -> R=alto),
+	asserta(cerveja(H,Cerveja,GT,R,GC,P)),
+	gerarAmargor(T).
+
+gerarCor([]).
+gerarCor([H|T]) :-
+	cerveja(H,Cerveja,GT,GA,_,P),
+	corCerveja(H,X),
+	Y is 16-X,
+	Y1 is 1/Y,
+	((Y1=<0.3) -> R=baixo;
+		(Y1=<0.6) -> R=moderado;
+		(Y1=<1) -> R=alto),
+	asserta(cerveja(H,Cerveja,GT,GA,R,P)),
+	gerarCor(T).
+
+/* ------ DEFUZZYFICAÇÃO ------ */
+/* Função auxiliar de calcular */
+
+pegarValor(X,Resposta,Valor) :-
+	((Resposta==baixo),(X==baixo) -> Valor is 100.0/3;
+		(Resposta==alto),(X==alto) -> Valor is 100.0/3;
+		((Resposta==baixo);(Resposta==alto)),(X==moderado) -> Valor is 66.66/3;
+		(Resposta==baixo),(X==alto) -> Valor is 25.0/3;
+		(Resposta==alto),(X==baixo) -> Valor is 25.0/3;
+		(Resposta==moderado),(X==moderado) -> Valor is 100.0/3;
+		(Resposta==moderado) -> Valor is 55.0/3).
+
+/* Calcula o valor da porcentagem final */
+calcular(Pergunta,Resposta,[]).
+calcular(Pergunta,Resposta,[H|T]) :-
+	cerveja(H,Cerveja,GT,GA,GC,P),
+	((Pergunta==p1) -> pegarValor(GT,Resposta,Valor), asserta(cerveja(H,Cerveja,GT,GA,GC,Valor));
+		(Pergunta==p2) -> pegarValor(GA,Resposta,Valor),Y1 is P+Valor,asserta(cerveja(H,Cerveja,GT,GA,GC,Y1));
+		(Pergunta==p3) -> pegarValor(GC,Resposta,Valor),Y1 is P+Valor,asserta(cerveja(H,Cerveja,GT,GA,GC,Y1))),
+	calcular(Pergunta,Resposta,T).
+/* ------ FIM DEFUZZYFICAÇÃO ------ */
+
+/* Maior valor de uma lista */
 max([X],M):-
-	cervejaPorcentagem(X,M).
+	cerveja(X,_,_,_,_,M).
 max([H|T],M) :-
-	cervejaPorcentagem(H,K),
+	cerveja(H,_,_,_,_,K),
 	max(T,N),
 	(K>N -> M=K; M=N).
 
-/* Responsável por chamar a função de perguntas */
-perguntas :- 
-	perguntar([p1,p2,p3]).
+/*Limpar*/
+limpar :- cerveja(H,A,B,C,D,_),asserta(cerveja(H,A,B,C,D,0)),fail.
+limpar.
 
-/* Responsável por procurar a resposta e mostrar na tela */
-respostas :-
-	new(D,dialog('Assistente Cervejeiro')),
-	new(L1, label(text, 'A cerveja ideal para você é:')),
-	max([c1,c2,c3,c4,c5,c6,c7,c8],X),
-	cervejaPorcentagem(H,X),
-	cerveja(H,Resposta),
+/* Fazer as perguntas */
 
-	new(L2,label(text,Resposta)),
-	send(D, append(L1)),
-	send(D,append(L2)),
-	send(D,open_centered),
-	limpar.
-
-/* Gera a porcentagem e guarda em cervejaPorcentagem */
-gerarPorcentagem([]).
-gerarPorcentagem([H|T]) :-
-	cervejaPorcentagem(H,X),
-	Y is X/3,
-	asserta(cervejaPorcentagem(H,Y*100)),
-	gerarPorcentagem(T).
-
-/* Faz as perguntas, mostra na tela, e trata a resposta */
-perguntar([]).
-perguntar([H|T]) :- 
-	pergunta(H,Pergunta,Positiva,Negativa), 
+perguntar(p3) :-
+	pergunta(p3,Pergunta), 
 	new(Questionario,dialog('Assistente Cervejeiro')),
-	new(L1,label(texto,'Responda a seguinte pergunta:')),
+	new(L1,label(text,'Responda a seguinte pergunta:')),
 	new(L2,label(text,Pergunta)),
-	new(B1,button(sim,and(message(Questionario,return,sim)))),
-	new(B2,button(não,and(message(Questionario,return,nao)))),
+
+	new(B1,button(dourado,and(message(Questionario,return,baixo)))),
+	new(B2,button(cobre,and(message(Questionario,return,moderado)))),
+	new(B3,button(marrom,and(message(Questionario,return,alto)))),
 
 	send(Questionario,append(L1)),
 	send(Questionario,append(L2)),
 	send(Questionario,append(B1)),
 	send(Questionario,append(B2)),
+	send(Questionario,append(B3)),
 
-	send(Questionario,default_button,sim),
+	send(Questionario,default_button,dourado),
 	send(Questionario,open_centered),get(Questionario,confirm,Resposta),
 	send(Questionario,destroy),
-	((Resposta==sim) -> incrementar(Positiva), perguntar(T);
-	(perguntar(T),incrementar(Negativa))).
+	calcular(p3,Resposta,[c1,c2,c3,c4,c5,c6,c7,c8]).
+	
+perguntar([]).
+perguntar([H|T]) :- 
+	pergunta(H,Pergunta), 
+	new(Questionario,dialog('Assistente Cervejeiro')),
+	new(L1,label(text,'Responda a seguinte pergunta:')),
+	new(L2,label(text,Pergunta)),
 
-/* Incrementa em cervejaPorcentagem */
-/* É chamada na consulta perguntar */
-incrementar([]).							
-incrementar([H|T]):- 
-	cervejaPorcentagem(H,Quantidade),
-	Y1 is Quantidade+1,
-	asserta(cervejaPorcentagem(H,Y1)),
-	incrementar(T).
+	new(B1,button(baixo,and(message(Questionario,return,baixo)))),
+	new(B2,button(moderado,and(message(Questionario,return,moderado)))),
+	new(B3,button(alto,and(message(Questionario,return,alto)))),
 
-/* Verifica se a Idade é um numero e se é de uma pessoa maior de idade */
+	send(Questionario,append(L1)),
+	send(Questionario,append(L2)),
+	send(Questionario,append(B1)),
+	send(Questionario,append(B2)),
+	send(Questionario,append(B3)),
+
+	send(Questionario,default_button,baixo),
+	send(Questionario,open_centered),get(Questionario,confirm,Resposta),
+	send(Questionario,destroy),
+	calcular(H,Resposta,[c1,c2,c3,c4,c5,c6,c7,c8]),
+	perguntar(T).
+
+/* Gerar todos os graus */
+
+gerador :-
+	gerarTeor([c1,c2,c3,c4,c5,c6,c7,c8]),
+	gerarAmargor([c1,c2,c3,c4,c5,c6,c7,c8]),
+	gerarCor([c1,c2,c3,c4,c5,c6,c7,c8]).
+
+/* Respostas */
+respostas :-
+	new(D,dialog('Assistente Cervejeiro')),
+	max([c1,c2,c3,c4,c5,c6,c7,c8],M),
+	cerveja(_,Resposta,_,_,_,M),
+
+	new(L1,label(text,'A cerveja ideal para você é:')),
+	new(L2,label(text,Resposta)),
+	new(L3,label(text,M)),
+	send(D,append(L1)),
+	send(D,append(L2)),
+	send(D,append(L3)),
+	send(D,open_centered),
+	limpar,
+	asserta(resposta(0,0,0)).
+
+/* Verificar Idade e Afins */
+
 verificar(Idade,Menu) :-
 	number(Idade),
 	((Idade>17) -> true;
 	new(Alerta,dialog('Assistente Cervejeiro')),
-	new(L1,label(texto,'Você é menor de idade. Em tese, não pode comprar bebida. Vai estudar!')),
+	new(L1,label(text,'Você é menor de idade. Em tese, não pode comprar bebida. Vai estudar!')),
 	new(B1,button('Ok',and(message(Menu, destroy),message(Menu,free),message(Alerta, destroy),message(Alerta,free)))),
 	send(Alerta,append(L1)),
 	send(Alerta,append(B1)),
@@ -122,9 +212,10 @@ verificar(Idade,Menu) :-
 /* Responsável chamar as consultas principais */
 
 operacao(Idade,Menu):-
+	gerador,
 	verificar(Idade,Menu),
-	perguntas,
-	gerarPorcentagem([c1,c2,c3,c4,c5,c6,c7,c8]),
+	perguntar([p1,p2]),
+	perguntar(p3),
 	respostas.
 
 /* Consulta que deverá ser realizada para o ínicio do programa */
@@ -143,4 +234,4 @@ iniciar:-
 	send(Menu,display,L2,point(150,100)),
 	send(Menu,display,B1,point(130,150)),
 	send(Menu,display,B2,point(300,150)),
-send(Menu,open_centered).
+	send(Menu,open_centered).
